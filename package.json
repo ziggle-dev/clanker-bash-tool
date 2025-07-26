@@ -2,6 +2,7 @@
   "name": "@ziggler/bash",
   "version": "1.0.0",
   "description": "Execute bash commands with user confirmation",
+  "type": "module",
   "main": "src/index.ts",
   "author": {
     "name": "Ziggler",
@@ -12,8 +13,16 @@
   "license": "MIT",
   "clanker": {
     "category": "System",
-    "capabilities": ["SystemExecute", "UserConfirmation"],
-    "tags": ["bash", "shell", "command", "system"],
+    "capabilities": [
+      "SystemExecute",
+      "UserConfirmation"
+    ],
+    "tags": [
+      "bash",
+      "shell",
+      "command",
+      "system"
+    ],
     "minVersion": "0.1.33"
   },
   "scripts": {
@@ -23,15 +32,18 @@
   },
   "peerDependencies": {
     "@ziggler/clanker": "*",
-    "react": "*",
-    "ink": "*"
+    "ink": "*",
+    "react": "*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
-    "typescript": "^5.0.0",
-    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0"
+    "@ziggler/clanker": "^0.1.31",
+    "eslint": "^8.0.0",
+    "ink": "^6.0.1",
+    "react": "^19.1.0",
+    "typescript": "^5.0.0"
   }
 }
