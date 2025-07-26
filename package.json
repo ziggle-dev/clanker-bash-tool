@@ -1,19 +1,19 @@
 {
-  "name": "@your-org/tool-name",
+  "name": "@ziggler/bash",
   "version": "1.0.0",
-  "description": "A brief description of what your tool does",
+  "description": "Execute bash commands with user confirmation",
   "main": "src/index.ts",
   "author": {
-    "name": "Your Name",
-    "email": "your.email@example.com",
-    "github": "your-github-username"
+    "name": "Ziggler",
+    "email": "dev@ziggler.dev",
+    "github": "ziggle-dev"
   },
-  "repository": "https://github.com/your-username/your-tool-repo",
+  "repository": "https://github.com/ziggle-dev/clanker-bash-tool",
   "license": "MIT",
   "clanker": {
-    "category": "Utility",
-    "capabilities": [],
-    "tags": ["example", "template"],
+    "category": "System",
+    "capabilities": ["SystemExecute", "UserConfirmation"],
+    "tags": ["bash", "shell", "command", "system"],
     "minVersion": "0.1.33"
   },
   "scripts": {

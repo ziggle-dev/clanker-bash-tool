@@ -1,120 +1,109 @@
 import { createTool, ToolCategory, ToolCapability } from '@ziggler/clanker';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-/**
- * Example tool template
- * 
- * This demonstrates the structure of a clanker tool using the builder pattern.
- * Modify this template to create your own tool.
- */
+const execAsync = promisify(exec);
+
+// Tool state
+let currentDirectory: string = process.cwd();
 
 export default createTool()
-  .id('tool-name')
-  .name('Tool Display Name')
-  .description('A clear, concise description of what this tool does')
-  .category(ToolCategory.Utility)
-  .capabilities(/* Add capabilities as needed, e.g., ToolCapability.FileRead */)
-  .tags('template', 'example')
+  .id('bash')
+  .name('Bash Command Executor')
+  .description('Execute a bash command')
+  .category(ToolCategory.System)
+  .capabilities(ToolCapability.SystemExecute, ToolCapability.UserConfirmation)
+  .tags('bash', 'shell', 'command', 'system')
   
-  // Define your tool's arguments
-  .stringArg('input', 'Description of the input parameter', { 
-    required: true,
-    validate: (value) => {
-      if (value.length < 3) {
-        return 'Input must be at least 3 characters';
-      }
-      return true;
-    }
+  // Arguments
+  .stringArg('command', 'The bash command to execute', { required: true })
+  .numberArg('timeout', 'Command timeout in milliseconds', {
+    default: 30000,
+    validate: (value) => value > 0 || 'Timeout must be positive'
   })
   
-  .numberArg('count', 'Number of times to repeat', { 
-    default: 1,
-    validate: (value) => value > 0 || 'Count must be positive'
-  })
-  
-  .booleanArg('verbose', 'Enable verbose output', { 
-    default: false 
-  })
-  
-  // Optional: Initialize resources when tool loads
+  // Initialize
   .onInitialize(async (context) => {
-    // Perform any setup needed
-    // Access to: context.workingDirectory, context.logger
-    context.logger?.debug('Tool initialized');
+    currentDirectory = context.workingDirectory || process.cwd();
   })
   
-  // Main execution logic
+  // Execute
   .execute(async (args, context) => {
-    const { input, count, verbose } = args;
+    const { command, timeout } = args;
+    
+    context.logger?.debug(`Executing bash command: ${command}`);
+    context.logger?.debug(`Working directory: ${currentDirectory}`);
+    context.logger?.debug(`Timeout: ${timeout}ms`);
     
     try {
-      // Your tool logic here
-      const results = [];
-      
-      for (let i = 0; i < count; i++) {
-        if (verbose) {
-          context.logger?.info(`Processing iteration ${i + 1}`);
+      // Handle cd command specially
+      if (command.startsWith('cd ')) {
+        const newDir = command.substring(3).trim();
+        try {
+          process.chdir(newDir);
+          currentDirectory = process.cwd();
+          
+          context.logger?.info(`Changed directory to: ${currentDirectory}`);
+          return {
+            success: true,
+            output: `Changed directory to: ${currentDirectory}`
+          };
+        } catch (error) {
+          context.logger?.error(`Failed to change directory: ${error instanceof Error ? error.message : String(error)}`);
+          return {
+            success: false,
+            error: `Cannot change directory: ${error instanceof Error ? error.message : String(error)}`
+          };
         }
-        
-        // Example: Process the input
-        const processed = input.toUpperCase();
-        results.push(`${i + 1}. ${processed}`);
       }
+      
+      // Execute command
+      const { stdout, stderr } = await execAsync(command, {
+        cwd: currentDirectory,
+        timeout,
+        maxBuffer: 1024 * 1024
+      });
+      
+      const output = stdout + (stderr ? `\nSTDERR: ${stderr}` : '');
+      
+      if (stderr) {
+        context.logger?.warn(`Command produced stderr output: ${stderr}`);
+      }
+      
+      context.logger?.info(`Command executed successfully`);
+      context.logger?.debug(`Output: ${output.substring(0, 200)}${output.length > 200 ? '...' : ''}`);
       
       return {
         success: true,
-        output: results.join('\n'),
-        data: {
-          processedCount: count,
-          results
-        }
+        output: output.trim() || 'Command executed successfully (no output)'
       };
-      
     } catch (error) {
-      context.logger?.error('Tool execution failed:', error);
-      
+      context.logger?.error(`Command failed: ${error instanceof Error ? error.message : String(error)}`);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: `Command failed: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   })
   
-  // Optional: Custom output rendering (requires React/Ink)
-  /*
-  .renderResult(({ result, isExecuting }) => {
-    if (isExecuting) {
-      return <Text color="cyan">Processing...</Text>;
-    }
-    
-    if (!result.success) {
-      return <Text color="red">Error: {result.error}</Text>;
-    }
-    
-    return (
-      <Box flexDirection="column">
-        <Text color="green">✓ Completed successfully</Text>
-        <Text>{result.output}</Text>
-      </Box>
-    );
-  })
-  */
-  
-  // Optional: Define usage examples
+  // Examples
   .examples([
     {
-      description: 'Basic usage',
+      description: 'List files in current directory',
       arguments: {
-        input: 'hello world'
+        command: 'ls -la'
       }
     },
     {
-      description: 'Repeat multiple times with verbose output',
+      description: 'Run command with custom timeout',
       arguments: {
-        input: 'test',
-        count: 3,
-        verbose: true
+        command: 'sleep 5 && echo "Done"',
+        timeout: 10000
       }
     }
   ])
   
   .build();
+
+// Export utility functions for backward compatibility
+export const getCurrentDirectory = (): string => currentDirectory;
